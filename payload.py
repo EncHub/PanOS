@@ -173,7 +173,7 @@ def setup_autostart():
 
 def check_autostart_status():
     try:
-        status = subprocess.run(["systemctl", "is-active", "telegram_proxy.service"], capture_output=True, text=True)
+        status = subprocess.run(["systemctl", "is-active", "telegram_proxy.service"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if status.returncode == 0 and status.stdout.strip() == 'active':
             return '✅'  # Успех
         else:
