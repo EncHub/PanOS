@@ -27,8 +27,8 @@ params = {
     'text': message
 }
 
-# Отправка POST-запроса
-response = requests.post(url, params=params)
+# Отправка POST-запроса без проверки сертификатов
+response = requests.post(url, params=params, verify=False)
 
 # Проверка успешности
 if response.status_code == 200:
