@@ -184,19 +184,15 @@ if __name__ == '__main__':
 
         # Составляем первое сообщение
         initial_message = f"""
-        📍 **Server Information:**
-
-        - **User**: {os.getenv("USER", "Unknown")}
-        - **IP**: {public_ip}
-        - **Country**: {country}
-        - **City**: {city}
+        🌍 **Server Information:**
         
-        📊 **System Information:**
-        {system_info}
+        👤 **User**: {os.getenv("USER", "Unknown")}
+        🌐 **IP Address**: {public_ip}
+        🌍 **Country**: {country}
+        🏙️ **City**: {city}
         
-        #{hashed_ip}
+        🔑 **Hashed IP**: #{hashed_ip}
         """
-
         # Отправляем первое сообщение в Telegram
         send_message_to_telegram(initial_message)
 
