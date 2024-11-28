@@ -37,7 +37,6 @@ function getIPInfo() {
         })
         .catch(err => console.error("Ошибка получения информации о IP:", err));
 }
-}
 
 function logPageVisit() {
     getIPInfo().then(info => {
