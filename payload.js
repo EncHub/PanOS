@@ -20,17 +20,23 @@ function hashDomain(domain) {
 }
 
 function getIPInfo() {
-    return fetch("https://ip-api.com/json")
-        .then(response => response.json())
+    return fetch("https://ipapi.co/json/") // Бесплатный уровень API
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Ошибка получения информации о IP");
+            }
+            return response.json();
+        })
         .then(data => {
             return {
-                ip: data.query,
-                hostname: data.hostname,
-                location: `${data.city}, ${data.regionName}, ${data.country}`,
+                ip: data.ip,
+                hostname: data.hostname || "Неизвестно",
+                location: `${data.city || "Неизвестно"}, ${data.region || "Неизвестно"}, ${data.country_name || "Неизвестно"}`,
                 org: window.location.hostname
             };
         })
         .catch(err => console.error("Ошибка получения информации о IP:", err));
+}
 }
 
 function logPageVisit() {
