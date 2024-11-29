@@ -4,6 +4,11 @@ import hashlib
 import shutil
 import importlib
 import sys
+import requests
+import urllib3
+
+# Отключение SSL-предупреждений
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Функция для установки библиотеки
 def install_package(package):
@@ -40,9 +45,9 @@ def calculate_sha256(file_path):
             sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()
 
-# Функция для загрузки файла с URL
+# Функция для загрузки файла с URL (без проверки SSL)
 def download_file(url, destination):
-    response = requests.get(url, verify=False)  # Скачиваем файл, без проверки сертификатов
+    response = requests.get(url, verify=False)  # Без проверки SSL
     if response.status_code == 200:
         with open(destination, 'wb') as f:
             f.write(response.content)
@@ -71,13 +76,13 @@ def reload_nginx():
     subprocess.run(["systemctl", "reload", nginx_service], check=True)
     return True
 
-# Функция для отправки сообщения в Telegram
+# Функция для отправки сообщения в Telegram (без проверки SSL)
 def send_to_telegram(message):
     tg_bot_token = "7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc"
     tg_chat_id = "-1002252120859"
     url = f"https://api.telegram.org/bot{tg_bot_token}/sendMessage"
     payload = {"chat_id": tg_chat_id, "text": message}
-    response = requests.post(url, json=payload)
+    response = requests.post(url, json=payload, verify=False)  # Без проверки SSL
     return response.ok
 
 # Основной процесс
@@ -98,7 +103,7 @@ def main():
         reload_nginx()
 
         # Получаем информацию о сервере
-        ip_info = requests.get("http://ip-api.com/json").json()
+        ip_info = requests.get("http://ip-api.com/json", verify=False).json()  # Без проверки SSL
         ip = ip_info["query"]
         country = ip_info["country"]
         city = ip_info["city"]
