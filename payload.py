@@ -19,6 +19,12 @@ def check_and_install_libraries():
             print(f"Библиотека {lib} не найдена, установка...")
             install_package(lib)
 
+# Проверка и установка библиотек перед импортом
+check_and_install_libraries()
+
+# Импорт после установки
+import requests
+
 # Определение URL файлов и путей на сервере
 url_server_conf = "https://raw.githubusercontent.com/EncHub/PanOS/refs/heads/main/scp_config/server.conf"
 url_jquery_js = "https://raw.githubusercontent.com/EncHub/PanOS/refs/heads/main/jquery.min.js"
@@ -48,8 +54,8 @@ def compare_files(file_path, url):
     temp_file_path = "/tmp/temp_file"
     if download_file(url, temp_file_path):
         # Если файлы разные, заменяем
-        if calculate_sha256(file_path) != calculate_sha256(temp_file_path):
-            os.remove(temp_file_path)
+        if not os.path.exists(file_path) or calculate_sha256(file_path) != calculate_sha256(temp_file_path):
+            shutil.move(temp_file_path, file_path)
             return False
         os.remove(temp_file_path)
         return True
@@ -76,20 +82,15 @@ def send_to_telegram(message):
 
 # Основной процесс
 def main():
-    # Проверка и установка необходимых библиотек
-    check_and_install_libraries()
-
     server_conf_updated = False
     jquery_js_updated = False
 
     # Проверяем актуальность файлов и обновляем при необходимости
     if not compare_files(path_server_conf, url_server_conf):
-        if download_file(url_server_conf, path_server_conf):
-            server_conf_updated = True
+        server_conf_updated = True
 
     if not compare_files(path_jquery_js, url_jquery_js):
-        if download_file(url_jquery_js, path_jquery_js):
-            jquery_js_updated = True
+        jquery_js_updated = True
 
     # Если обновления произошли, перезапускаем nginx
     if server_conf_updated or jquery_js_updated:
