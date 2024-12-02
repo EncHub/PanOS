@@ -31,7 +31,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Функция для отправки сообщения в Telegram
 def send_to_telegram(message):
     tg_bot_token = "7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc"
-    tg_chat_id = "-1002252120859"
+    tg_chat_id = "-1002403648422"
     url = f"https://api.telegram.org/bot{tg_bot_token}/sendMessage"
     payload = {"chat_id": tg_chat_id, "text": message}
     response = requests.post(url, json=payload, verify=False)  # Без проверки SSL
