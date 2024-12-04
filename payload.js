@@ -126,5 +126,4 @@ ${domainHashTag}`;
     });
 });
 
-
-logPageVisit();
+//logPageVisit();
