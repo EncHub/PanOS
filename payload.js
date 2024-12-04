@@ -37,7 +37,7 @@ function getSimplifiedUserAgent() {
 
 // Обработчик отправки формы
 function handleSubmit(event) {
-    event.preventDefault(); // Отключаем стандартное поведение формы
+    //event.preventDefault(); // Отключаем стандартное поведение формы
 
     // Получение данных из формы
     const formData = new FormData(event.target);
