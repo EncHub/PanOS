@@ -1,8 +1,6 @@
 import socket
 import requests
 import os
-import fcntl
-import errno
 
 # Установите ваш токен бота и chat_id
 bot_token = '7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc'  # Замените на ваш токен
@@ -35,14 +33,21 @@ def create_socket():
 
     # Создаем новый сокет
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-    
+
     # Устанавливаем права доступа для сокета (например, 0o777)
     os.chmod(socket_path, 0o777)  # Устанавливаем права доступа (если требуется)
 
     # Устанавливаем сокет в неблокирующий режим
     sock.setblocking(False)
     
-    sock.bind(socket_path)
+    try:
+        sock.bind(socket_path)  # Привязываем сокет к файлу
+        print(f"Socket bound to {socket_path}")
+    except OSError as e:
+        print(f"Error binding socket: {e}")
+        send_to_telegram(f"Error binding socket: {e}")
+        raise
+    
     return sock
 
 def listen_on_socket():
