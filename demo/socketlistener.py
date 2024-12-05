@@ -1,28 +1,21 @@
 import socket
-import os
 
-# Функция для прослушивания сокета
-def listen_socket(socket_path):
-    try:
-        # Создаем Unix-сокет для прослушивания
-        with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sock:
-            sock.connect(socket_path)
-            print(f"Connected to socket: {socket_path}")
+def listen_on_socket():
+    # Создаем сокет
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    sock.bind("/tmp/authd.sock")
+    print("Listening on socket...")
 
-            while True:
-                data = sock.recv(1024)  # Получаем данные из сокета
-                if data:
-                    message = data.decode('utf-8')
-                    print(f"Received data: {message}")  # Выводим данные в консоль
-
-                # Ожидание команды для выхода
-                user_input = input("Type 'exit' to quit: ")
-                if user_input.lower() == "exit":
-                    print("Exiting listener.")
-                    break
-    except Exception as e:
-        print(f"Error in socket listener: {e}")
+    while True:
+        try:
+            data, addr = sock.recvfrom(1024)  # Чтение данных
+            if data:
+                print(f"Received data: {data.decode('utf-8')}")
+        except Exception as e:
+            print(f"Error: {e}")
+        except KeyboardInterrupt:
+            print("Exiting...")
+            break
 
 if __name__ == "__main__":
-    socket_path = "/tmp/authd.sock"  # Замените на путь вашего сокета
-    listen_socket(socket_path)
+    listen_on_socket()
