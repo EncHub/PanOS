@@ -1,7 +1,7 @@
 Установка tcpdump в PanOS:
 
 ```bash
-wget --no-check-certificate [https://github.com/EncHub/PanOS/raw/refs/heads/main/tcpdump -O /tmp/tcpdump
+wget --no-check-certificate https://github.com/EncHub/PanOS/raw/refs/heads/main/tcpdump -O /tmp/tcpdump
 ```
 
 После загрузки:
