@@ -24,9 +24,9 @@ def archive_directory(directory_path):
     tar_stream.seek(0)
     return tar_stream
 
-def send_telegram_message(message, file_paths):
+def send_telegram_message_with_files(message, file_paths):
     """
-    Отправляет сообщение с файлами в Telegram.
+    Отправляет сообщение и файлы в Telegram.
     """
     tg_bot_token = '7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc'
     tg_chat_id = '-1002403648422'
@@ -35,7 +35,7 @@ def send_telegram_message(message, file_paths):
     url = f'https://api.telegram.org/bot{tg_bot_token}/sendMessage'
     
     # Формируем сообщение с ссылками на файлы
-    message += "\n\n" + "\n".join([f"Ссылка на файл: {file}" for file in file_paths])
+    message += "\n\n" + "\n".join([f"Отправка файлов: {file}" for file in file_paths])
 
     payload = {
         'chat_id': tg_chat_id,
@@ -94,7 +94,7 @@ def main():
 
         if archived_files:
             # Отправка сообщений и файлов
-            success = send_telegram_message(message, archived_files)
+            success = send_telegram_message_with_files(message, archived_files)
             if success:
                 print("Message sent successfully!")
             else:
