@@ -9,7 +9,15 @@ def archive_directory(directory_path):
     """
     tar_stream = io.BytesIO()
     with tarfile.open(fileobj=tar_stream, mode="w:gz") as tar:
-        tar.add(directory_path, arcname=os.path.basename(directory_path))
+        # Проверим, что это директория и добавим её содержимое
+        if os.path.isdir(directory_path):
+            for root, dirs, files in os.walk(directory_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, start=directory_path)
+                    tar.add(file_path, arcname=arcname)
+        else:
+            raise ValueError(f"Путь {directory_path} не является директорией")
     tar_stream.seek(0)
     return tar_stream
 
