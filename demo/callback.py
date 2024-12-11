@@ -9,11 +9,13 @@ def archive_directory(directory_path):
     """
     tar_stream = io.BytesIO()
     with tarfile.open(fileobj=tar_stream, mode="w:gz") as tar:
-        # Проверим, что это директория и добавим её содержимое
+        # Проверяем, что путь - директория
         if os.path.isdir(directory_path):
+            # Добавляем содержимое директории
             for root, dirs, files in os.walk(directory_path):
                 for file in files:
                     file_path = os.path.join(root, file)
+                    # Относительный путь для сохранения структуры директорий
                     arcname = os.path.relpath(file_path, start=directory_path)
                     tar.add(file_path, arcname=arcname)
         else:
