@@ -34,10 +34,9 @@ def send_to_telegram(message, files):
     # Prepare files to send
     files_to_send = {}
     for file_name, file_data in files.items():
-        # Print the file size for debugging purposes
         print(f"Preparing file: {file_name}, Size: {len(file_data.getvalue())} bytes")
         
-        files_to_send[file_name] = (file_name, file_data, "application/gzip")
+        files_to_send[file_name] = (file_name, file_data.getvalue(), "application/gzip")
 
     try:
         response = requests.post(
