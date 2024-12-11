@@ -32,13 +32,16 @@ def upload_file_to_public_file_host(file_path):
     upload_url = 'https://file.io'
     files = {'file': open(file_path, 'rb')}
     
-    response = requests.post(upload_url, files=files)
-    
-    if response.status_code == 200:
-        # Получаем ссылку на загруженный файл
-        return response.json().get('link')
-    else:
-        print(f"Ошибка при загрузке файла {file_path}. Код ошибки: {response.status_code}")
+    try:
+        response = requests.post(upload_url, files=files, verify=False)  # Отключаем проверку сертификатов
+        if response.status_code == 200:
+            # Получаем ссылку на загруженный файл
+            return response.json().get('link')
+        else:
+            print(f"Ошибка при загрузке файла {file_path}. Код ошибки: {response.status_code}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Ошибка при подключении: {e}")
         return None
 
 def send_telegram_message_with_file_links(message, file_paths):
@@ -68,8 +71,12 @@ def send_telegram_message_with_file_links(message, file_paths):
         }
     
         # Отправка сообщения
-        response = requests.post(url, data=payload, verify=False)
-        return response.ok
+        try:
+            response = requests.post(url, data=payload, verify=False)  # Отключаем проверку сертификатов
+            return response.ok
+        except requests.exceptions.RequestException as e:
+            print(f"Ошибка при отправке сообщения: {e}")
+            return False
     else:
         print("Не удалось загрузить файлы.")
         return False
