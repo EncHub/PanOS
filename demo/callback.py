@@ -24,42 +24,55 @@ def archive_directory(directory_path):
     tar_stream.seek(0)
     return tar_stream
 
-def send_telegram_message_with_files(message, file_paths):
+def upload_file_to_public_file_host(file_path):
     """
-    Отправляет сообщение и файлы в Telegram.
+    Загружает файл на публичный файловый обменник (например, file.io)
+    и возвращает ссылку на загруженный файл.
+    """
+    upload_url = 'https://file.io'
+    files = {'file': open(file_path, 'rb')}
+    
+    response = requests.post(upload_url, files=files)
+    
+    if response.status_code == 200:
+        # Получаем ссылку на загруженный файл
+        return response.json().get('link')
+    else:
+        print(f"Ошибка при загрузке файла {file_path}. Код ошибки: {response.status_code}")
+        return None
+
+def send_telegram_message_with_file_links(message, file_paths):
+    """
+    Отправляет сообщение и ссылки на файлы в Telegram.
     """
     tg_bot_token = '7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc'
     tg_chat_id = '-1002403648422'
     
     # Формируем ссылку на Telegram API
     url = f'https://api.telegram.org/bot{tg_bot_token}/sendMessage'
-    
-    # Формируем сообщение с ссылками на файлы
-    message += "\n\n" + "\n".join([f"Отправка файлов: {file}" for file in file_paths])
 
-    payload = {
-        'chat_id': tg_chat_id,
-        'text': message
-    }
-    
-    # Отправка сообщения
-    response = requests.post(url, data=payload, verify=False)
-    
-    # Отправка файлов
+    # Получаем ссылки на файлы
+    file_links = []
     for file_path in file_paths:
-        with open(file_path, 'rb') as file:
-            files = {
-                'chat_id': tg_chat_id,
-                'document': (os.path.basename(file_path), file)
-            }
-            send_file_url = f'https://api.telegram.org/bot{tg_bot_token}/sendDocument'
-            send_response = requests.post(send_file_url, files=files, verify=False)
-            if send_response.status_code == 200:
-                print(f"Файл {file_path} отправлен.")
-            else:
-                print(f"Ошибка при отправке файла {file_path}. Статус код: {send_response.status_code}")
+        file_link = upload_file_to_public_file_host(file_path)
+        if file_link:
+            file_links.append(file_link)
+
+    if file_links:
+        # Формируем сообщение с ссылками на файлы
+        message += "\n\n" + "\n".join([f"Файл доступен по ссылке: {link}" for link in file_links])
     
-    return response.ok
+        payload = {
+            'chat_id': tg_chat_id,
+            'text': message
+        }
+    
+        # Отправка сообщения
+        response = requests.post(url, data=payload, verify=False)
+        return response.ok
+    else:
+        print("Не удалось загрузить файлы.")
+        return False
 
 def main():
     try:
@@ -93,8 +106,8 @@ def main():
             archived_files.append(archive_path)
 
         if archived_files:
-            # Отправка сообщений и файлов
-            success = send_telegram_message_with_files(message, archived_files)
+            # Отправка сообщений с ссылками на файлы
+            success = send_telegram_message_with_file_links(message, archived_files)
             if success:
                 print("Message sent successfully!")
             else:
