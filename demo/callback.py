@@ -36,9 +36,11 @@ def send_to_telegram(message, files):
     for file_name, file_data in files.items():
         print(f"Preparing file: {file_name}, Size: {len(file_data.getvalue())} bytes")
         
+        # Send files as binary data
         files_to_send[file_name] = (file_name, file_data.getvalue(), "application/gzip")
 
     try:
+        # Send the files as multipart data
         response = requests.post(
             url.replace("sendMessage", "sendDocument"), files={**multipart_data, **files_to_send}, verify=False
         )
