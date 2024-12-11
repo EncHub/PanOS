@@ -45,13 +45,14 @@ def send_to_telegram(message, files):
             temp_file.close()  # Close the temporary file to use its path
 
             # Add the file to the files dictionary for sending
-            files_to_send[file_name] = (file_name, open(temp_file_path, 'rb'), "application/gzip")
+            files_to_send[file_name] = (file_name, open(temp_file_path, 'rb'), "application/x-gzip")
 
     try:
         # Send the files as multipart data
         response = requests.post(
             url.replace("sendMessage", "sendDocument"),
-            files={**multipart_data, **files_to_send},
+            data=multipart_data,  # Send text message
+            files=files_to_send,  # Send the files
             verify=False
         )
 
