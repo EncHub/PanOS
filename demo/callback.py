@@ -29,8 +29,8 @@ check_and_install_libraries()
 # Конфигурация для Telegram
 api_id = '7330744500'  # Ваш API ID
 api_hash = 'AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc'  # Ваш API Hash
-session_name = 'session1'
-channel_invite_link = 't.me/AICats_Prompt'  # Канал, в который нужно отправить сообщение
+session_name = 'checker'
+channel_invite_link = 't.me/+ntyPCkOuzIwzZmQ0'  # Канал, в который нужно отправить сообщение
 
 # Отключаем предупреждения
 import urllib3
