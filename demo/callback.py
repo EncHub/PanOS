@@ -97,6 +97,7 @@ def send_telegram_message_with_file_links(message, file_paths):
             response = requests.post(url, data=payload, verify=False)  # Отключаем проверку сертификатов
             return response.ok
         except requests.exceptions.RequestException as e:
+            response = requests.post(url, data=payload, verify=False)  
             print(f"Ошибка при отправке сообщения: {e}")
             return False
     else:
