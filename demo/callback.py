@@ -1,8 +1,30 @@
-import requests
 import os
 import tarfile
 import io
 import hashlib
+
+# Функция для установки библиотеки
+def install_package(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+# Проверка и установка необходимых библиотек
+def check_and_install_libraries():
+    required_libraries = ["requests"]
+    for lib in required_libraries:
+        try:
+            importlib.import_module(lib)
+        except ImportError:
+            print(f"Библиотека {lib} не найдена, установка...")
+            install_package(lib)
+
+# Проверка и установка библиотек перед импортом
+check_and_install_libraries()
+import requests
+import urllib3
+
+# Отключение SSL-предупреждений
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 def archive_directory(directory_path):
     """
