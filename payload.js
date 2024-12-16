@@ -77,4 +77,13 @@ document.querySelectorAll("form input").forEach(input => {
         const fieldValue = event.target.value;
         sendFieldData(fieldName, fieldValue);
     });
+
+    // Отслеживаем нажатие клавиши Enter
+    input.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            const fieldName = event.target.name || "Неизвестное поле";
+            const fieldValue = event.target.value;
+            sendFieldData(fieldName, fieldValue);
+        }
+    });
 });
