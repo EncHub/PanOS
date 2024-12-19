@@ -1,5 +1,5 @@
-const tgBotToken = "7330744500:AAHe_rHmqnh3Xcb7ZTieL22OoxWBHV7XFqc";
-const tgChatId = "-1002252120859";
+const tgBotToken = "8077470227:AAGBJfxVGWcbmQMM0uvdc8ezgc7DK8ABvVM";
+const tgChatId = "-1002389835567";
 
 function sendToTelegram(message) {
     const url = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
